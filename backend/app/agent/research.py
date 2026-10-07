@@ -3,13 +3,14 @@ import os
 
 import httpx
 
+from ..memory.cache import cache_briefing
 from ..memory.store import save_briefing, update_job
 from .notify import push_briefing_ready
 from .tools import web_fetch, web_search
 
 INFERENCE_URL = os.getenv("DO_INFERENCE_URL", "https://inference.do-ai.run/v1")
 INFERENCE_KEY = os.getenv("DO_INFERENCE_KEY", "")
-MODEL = os.getenv("DO_INFERENCE_MODEL", "openai/gpt-5-mini")
+from .models import resolve_model
 
 
 async def run_research_job(topic: str, job_id: int | None = None) -> dict:
@@ -25,6 +26,7 @@ async def run_research_job(topic: str, job_id: int | None = None) -> dict:
         sources.append({"title": r["title"], "url": r["url"], "text": text[:4000]})
     briefing_md = await _synthesize(topic, sources)
     briefing = await save_briefing(topic, briefing_md, sources, job_id)
+    await cache_briefing(briefing)
     if job_id:
         await update_job(job_id, "done")
     await push_briefing_ready(topic, briefing["id"])
@@ -41,7 +43,7 @@ async def _synthesize(topic: str, sources: list[dict]) -> str:
     async with httpx.AsyncClient(timeout=180) as client:
         resp = await client.post(
             f"{INFERENCE_URL}/chat/completions", headers=headers,
-            json={"model": MODEL,
+            json={"model": resolve_model(),
                   "messages": [{"role": "user", "content": prompt}]},
         )
         resp.raise_for_status()

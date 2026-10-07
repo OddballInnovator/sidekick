@@ -18,6 +18,8 @@ services:
     value: https://inference.do-ai.run/v1
   - key: DO_INFERENCE_MODEL
     value: openai/gpt-5-mini
+  - key: DO_INFERENCE_ROUTER
+    value: REPLACE_ME
   - key: DO_INFERENCE_KEY
     type: SECRET
     value: REPLACE_ME
@@ -26,6 +28,8 @@ services:
     value: REPLACE_ME
   - key: DATABASE_URL
     value: ${sidekick-db.DATABASE_URL}
+  - key: VALKEY_URL
+    value: ${sidekick-cache.DATABASE_URL}
   - key: ONESIGNAL_APP_ID
     value: REPLACE_ME
   - key: ONESIGNAL_API_KEY
@@ -37,4 +41,8 @@ databases:
 - name: sidekick-db
   engine: PG
   version: "16"
+  size: db-s-1vcpu-1gb
+- name: sidekick-cache
+  engine: VALKEY
+  version: "8"
   size: db-s-1vcpu-1gb

@@ -10,7 +10,7 @@ from . import tools as _tools  # noqa: F401 (kept for explicit tool surface)
 
 INFERENCE_URL = os.getenv("DO_INFERENCE_URL", "https://inference.do-ai.run/v1")
 INFERENCE_KEY = os.getenv("DO_INFERENCE_KEY", "")
-MODEL = os.getenv("DO_INFERENCE_MODEL", "openai/gpt-5-mini")
+from .models import resolve_model
 
 SCHEDULE_RE = re.compile(
     r"\bby\s+(\d{1,2}\s?(?:am|pm))\b|\btomorrow morning\b|\bovernight\b|\bby morning\b",
@@ -46,7 +46,7 @@ async def stream_chat(message: str):
         async with client.stream(
             "POST", f"{INFERENCE_URL}/chat/completions",
             headers=headers,
-            json={"model": MODEL, "messages": [{"role": "user", "content": message}],
+            json={"model": resolve_model(), "messages": [{"role": "user", "content": message}],
                   "stream": True},
         ) as resp:
             async for line in resp.aiter_lines():

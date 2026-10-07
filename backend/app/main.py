@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from .agent.chat import stream_chat
 from .agent.research import run_research_job
 from .jobs import scheduler, schedule_job
+from .memory.cache import get_cached_briefing
 from .memory.store import get_briefing, init_db, list_briefings
 
 app = FastAPI(title="Sidekick")
@@ -57,7 +58,8 @@ async def briefings():
 
 @app.get("/api/briefings/{briefing_id}")
 async def briefing(briefing_id: int):
-    return await get_briefing(briefing_id)
+    cached = await get_cached_briefing(briefing_id)
+    return cached or await get_briefing(briefing_id)
 
 
 @app.get("/api/health")
