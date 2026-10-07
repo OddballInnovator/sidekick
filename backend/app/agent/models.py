@@ -12,4 +12,4 @@ def resolve_model() -> str:
     router = os.getenv("DO_INFERENCE_ROUTER", "").strip()
     if router and router != "REPLACE_ME":
         return f"router:{router}"
-    return os.getenv("DO_INFERENCE_MODEL", "openai/gpt-5-mini")
+    return os.getenv("DO_INFERENCE_MODEL", "llama-4-maverick")

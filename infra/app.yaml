@@ -19,7 +19,7 @@ services:
   - key: DO_INFERENCE_URL
     value: https://inference.do-ai.run/v1
   - key: DO_INFERENCE_MODEL
-    value: openai/gpt-5-mini
+    value: llama-4-maverick
   - key: DO_INFERENCE_ROUTER
     value: REPLACE_ME
   - key: DO_INFERENCE_KEY
@@ -29,7 +29,7 @@ services:
     type: SECRET
     value: REPLACE_ME
   - key: DATABASE_URL
-    value: ${sidekick-db.DATABASE_URL}
+    value: ${sidekick-pg.DATABASE_URL}
   - key: VALKEY_URL
     value: ${sidekick-cache.DATABASE_URL}
   - key: VAPID_PUBLIC_KEY
@@ -40,10 +40,12 @@ services:
   - key: DEMO_MODE
     value: "0"
 databases:
-- name: sidekick-db
+- name: sidekick-pg
   engine: PG
   version: "16"
   size: db-s-1vcpu-1gb
+  production: true
+  cluster_name: sidekick-pg
 - name: sidekick-cache
   engine: VALKEY
   version: "8"
