@@ -9,7 +9,8 @@ services:
     repo: OddballInnovator/sidekick
     branch: main
     deploy_on_push: true
-  run_command: pip install -r backend/requirements.txt && uvicorn app.main:app --host 0.0.0.0 --port 8080 --app-dir backend
+  build_command: pip install -r backend/requirements.txt
+  run_command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --app-dir backend
   http_port: 8080
   health_check:
     http_path: /api/health
