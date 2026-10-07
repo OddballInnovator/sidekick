@@ -20,10 +20,15 @@ app = FastAPI(title="Sidekick")
 
 @app.on_event("startup")
 async def startup():
-    try:
-        await init_db()
-    except Exception as e:
-        print(f"init_db failed (continuing): {e}", flush=True)
+    import asyncio
+    for attempt in range(6):
+        try:
+            await init_db()
+            print("init_db ok", flush=True)
+            break
+        except Exception as e:
+            print(f"init_db attempt {attempt + 1} failed: {e}", flush=True)
+            await asyncio.sleep(5)
     scheduler.start()
 
 
