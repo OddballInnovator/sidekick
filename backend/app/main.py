@@ -78,6 +78,23 @@ async def briefing(briefing_id: int):
     return cached or await get_briefing(briefing_id)
 
 
+@app.post("/api/admin/init")
+async def admin_init():
+    """One-time schema init (bypasses lifespan questions). Remove after demo."""
+    try:
+        await init_db()
+        pool = await _db_pool()
+        n = await pool.fetchval("SELECT COUNT(*) FROM briefings")
+        tables = await pool.fetch(
+            "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY 1")
+        return {"ok": True, "briefings_count": n,
+                "tables": [r["tablename"] for r in tables]}
+    except Exception as e:
+        import traceback
+        return {"ok": False, "error": f"{type(e).__name__}: {e}",
+                "traceback": traceback.format_exc()[-2000:]}
+
+
 @app.get("/api/push/vapid-public-key")
 async def vapid_public_key():
     return {"publicKey": os.getenv("VAPID_PUBLIC_KEY", "")}
