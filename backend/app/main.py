@@ -20,7 +20,10 @@ app = FastAPI(title="Sidekick")
 
 @app.on_event("startup")
 async def startup():
-    await init_db()
+    try:
+        await init_db()
+    except Exception as e:
+        print(f"init_db failed (continuing): {e}", flush=True)
     scheduler.start()
 
 
@@ -60,6 +63,22 @@ async def briefings():
 async def briefing(briefing_id: int):
     cached = await get_cached_briefing(briefing_id)
     return cached or await get_briefing(briefing_id)
+
+
+@app.get("/api/push/vapid-public-key")
+async def vapid_public_key():
+    return {"publicKey": os.getenv("VAPID_PUBLIC_KEY", "")}
+
+
+class PushSub(BaseModel):
+    endpoint: str
+    keys: dict
+
+
+@app.post("/api/push/subscribe")
+async def push_subscribe(body: PushSub):
+    await save_subscription(body.endpoint, body.keys.get("p256dh", ""), body.keys.get("auth", ""))
+    return {"ok": True}
 
 
 @app.get("/api/health")
