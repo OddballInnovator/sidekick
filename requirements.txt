@@ -1,0 +1,3 @@
+# Root pointer so the App Platform Python buildpack detects the app.
+# Real dependencies live in backend/requirements.txt
+-r backend/requirements.txt
