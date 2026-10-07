@@ -57,8 +57,13 @@ class JobIn(BaseModel):
 @app.post("/api/jobs/trigger")
 async def trigger_job(body: JobIn):
     """The 'morning' seam: run the overnight research job on demand."""
-    briefing = await run_research_job(body.topic)
-    return {"briefing_id": briefing["id"]}
+    import traceback
+    try:
+        briefing = await run_research_job(body.topic)
+        return {"briefing_id": briefing["id"]}
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {e}",
+                "traceback": traceback.format_exc()[-2500:]}
 
 
 @app.post("/api/jobs")
