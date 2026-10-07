@@ -56,6 +56,12 @@ def _next_run_at(text: str) -> datetime.datetime:
 
 async def stream_chat(message: str):
     await save_message("user", message)
+    from .vm import wants_vm, run_vm_task
+    if wants_vm(message):
+        async for event in run_vm_task(message):
+            yield f"data: {json.dumps(event)}\n\n"
+        yield "data: [DONE]\n\n"
+        return
     if _looks_like_schedule(message):
         topic = _extract_topic(message)
         job = await save_job(topic, status="scheduled")

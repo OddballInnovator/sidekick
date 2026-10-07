@@ -48,3 +48,19 @@ async def get_current_job() -> dict | None:
         return None
     raw = await c.get("job:current")
     return json.loads(raw) if raw else None
+
+
+async def get(key: str) -> str | None:
+    """Generic string get (e.g. the agent SSH private key)."""
+    c = _client_or_none()
+    if not c:
+        return None
+    return await c.get(key)
+
+
+async def set(key: str, value: str, ex: int = 86400 * 30) -> None:
+    """Generic string set."""
+    c = _client_or_none()
+    if not c:
+        return
+    await c.set(key, value, ex=ex)

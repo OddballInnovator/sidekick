@@ -23,7 +23,7 @@ before we move on. Scripted takes only (Playwright, golden path from
 | S8 | Project + observability + billing (Act 5) | real time | pending | needs DO console login |
 | S9 | Voiceover laid under picture lock | post | done | sidekick-film.mp4 (2m08s draft) |
 
-**Note (2026-10-07):** S1/S4/S5/S6/S7 are high-fidelity mocks (PIL) built from the real app's design tokens and real researched content. The chat scheduling they depict WORKS on the live app. S6/S7 visualize the pipeline, which is blocked on the inference key. Replace with real captures once inference works.
+**Note (2026-10-07):** S1/S4/S5/S6/S7 are high-fidelity mocks (PIL) built from the real app's design tokens and real researched content. The chat scheduling they depict WORKS on the live app. **Update 2026-10-07 ~04:30 PDT:** The full pipeline now works end-to-end (Exa search → llama synthesis → Postgres). The mocks remain as visualizations; replace with real captures when convenient. S8 (console) still needs a logged-in session.
 
 ## Files
 - `takes/` — raw captures, named `<ID>-take<N>.mp4` (not committed; too big —
