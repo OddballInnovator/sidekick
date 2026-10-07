@@ -1,0 +1,40 @@
+# Sidekick on App Platform: one service (API + web UI) + managed Postgres.
+# Deploy: doctl apps create --spec infra/app.yaml
+# Then set the REPLACE_ME secrets in the console (or via doctl apps update).
+name: sidekick
+services:
+- name: api
+  github:
+    repo: OddballInnovator/sidekick
+    branch: main
+    deploy_on_push: true
+  run_command: pip install -r backend/requirements.txt && uvicorn app.main:app --host 0.0.0.0 --port 8080 --app-dir backend
+  http_port: 8080
+  health_check:
+    http_path: /api/health
+  instance_size_slug: basic-xxs
+  envs:
+  - key: DO_INFERENCE_URL
+    value: https://inference.do-ai.run/v1
+  - key: DO_INFERENCE_MODEL
+    value: openai/gpt-5-mini
+  - key: DO_INFERENCE_KEY
+    type: SECRET
+    value: REPLACE_ME
+  - key: DIGITALOCEAN_TOKEN
+    type: SECRET
+    value: REPLACE_ME
+  - key: DATABASE_URL
+    value: ${sidekick-db.DATABASE_URL}
+  - key: ONESIGNAL_APP_ID
+    value: REPLACE_ME
+  - key: ONESIGNAL_API_KEY
+    type: SECRET
+    value: REPLACE_ME
+  - key: DEMO_MODE
+    value: "0"
+databases:
+- name: sidekick-db
+  engine: PG
+  version: "16"
+  size: db-s-1vcpu-1gb
