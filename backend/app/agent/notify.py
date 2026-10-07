@@ -1,24 +1,45 @@
-"""OneSignal push on briefing completion. No-op without keys."""
+"""Web Push (VAPID) on briefing completion — sent directly from our backend.
+
+No third-party push vendor: the App Platform service encrypts and delivers
+pushes itself via the Web Push protocol. The web UI subscribes through its
+service worker (web/sw.js).
+"""
+import json
 import os
 
-import httpx
-
-ONESIGNAL_APP_ID = os.getenv("ONESIGNAL_APP_ID", "")
-ONESIGNAL_API_KEY = os.getenv("ONESIGNAL_API_KEY", "")
+from ..memory.store import list_subscriptions
 
 
-async def push_briefing_ready(topic: str, briefing_id: int) -> None:
-    if not (ONESIGNAL_APP_ID and ONESIGNAL_API_KEY):
-        return  # not configured; the briefing view is the fallback surface
-    async with httpx.AsyncClient(timeout=30) as client:
-        await client.post(
-            "https://onesignal.com/api/v1/notifications",
-            headers={"Authorization": f"Basic {ONESIGNAL_API_KEY}"},
-            json={
-                "app_id": ONESIGNAL_APP_ID,
-                "included_segments": ["All"],
-                "headings": {"en": "Sidekick"},
-                "contents": {"en": f"Your briefing is ready: {topic}"},
-                "data": {"briefing_id": briefing_id},
-            },
-        )
+def _vapid():
+    return {
+        "private_key": os.getenv("VAPID_PRIVATE_KEY", ""),
+        "public_key": os.getenv("VAPID_PUBLIC_KEY", ""),
+        "claims_sub": os.getenv("VAPID_SUBJECT", "mailto:sidekick@example.com"),
+    }
+
+
+async def push_briefing_ready(topic: str, briefing_id: int) -> int:
+    """Push to all subscribed devices. Returns number of pushes sent."""
+    v = _vapid()
+    subs = await list_subscriptions()
+    if not v["private_key"] or not subs:
+        return 0
+    from pywebpush import WebPushException, webpush
+
+    payload = json.dumps({"title": "Sidekick",
+                          "body": f"Your briefing is ready: {topic}",
+                          "briefing_id": briefing_id})
+    sent = 0
+    for s in subs:
+        try:
+            webpush(
+                subscription_info={"endpoint": s["endpoint"],
+                                   "keys": {"p256dh": s["p256dh"], "auth": s["auth"]}},
+                data=payload,
+                vapid_private_key=v["private_key"],
+                vapid_claims={"sub": v["claims_sub"]},
+            )
+            sent += 1
+        except WebPushException:
+            continue  # expired subscription; leave cleanup for later
+    return sent

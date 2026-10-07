@@ -31,11 +31,11 @@ services:
     value: ${sidekick-db.DATABASE_URL}
   - key: VALKEY_URL
     value: ${sidekick-cache.DATABASE_URL}
-  - key: ONESIGNAL_APP_ID
-    value: REPLACE_ME
-  - key: ONESIGNAL_API_KEY
+  - key: VAPID_PUBLIC_KEY
+    value: BPDbSPkMi693xCgcQInvRKSzAfD4VFK6Bc07NYdZTyqvEt0PHG9Wigbd6Bw9Rp1BLY57TtKJYsy8A_-jvfPE_Wc
+  - key: VAPID_PRIVATE_KEY
     type: SECRET
-    value: REPLACE_ME
+    value: REPLACE_ME_DEPLOY_SET_VIA_API
   - key: DEMO_MODE
     value: "0"
 databases:

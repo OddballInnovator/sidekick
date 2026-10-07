@@ -32,6 +32,13 @@ CREATE TABLE IF NOT EXISTS preferences (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id SERIAL PRIMARY KEY,
+  endpoint TEXT UNIQUE NOT NULL,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 """
 
 
@@ -88,3 +95,18 @@ async def get_briefing(briefing_id: int) -> dict:
 async def save_message(role: str, content: str) -> None:
     pool = await _pool()
     await pool.execute("INSERT INTO messages (role, content) VALUES ($1,$2)", role, content)
+
+
+async def save_subscription(endpoint: str, p256dh: str, auth: str) -> None:
+    pool = await _pool()
+    await pool.execute(
+        """INSERT INTO push_subscriptions (endpoint, p256dh, auth)
+           VALUES ($1,$2,$3)
+           ON CONFLICT (endpoint) DO UPDATE SET p256dh=$2, auth=$3""",
+        endpoint, p256dh, auth)
+
+
+async def list_subscriptions() -> list[dict]:
+    pool = await _pool()
+    rows = await pool.fetch("SELECT endpoint, p256dh, auth FROM push_subscriptions")
+    return [dict(r) for r in rows]

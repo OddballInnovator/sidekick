@@ -17,7 +17,10 @@
   #app { max-width:430px; margin:0 auto; min-height:100dvh;
          display:flex; flex-direction:column; }
   header { padding:14px 16px; border-bottom:1px solid #1e2f47;
-           font-weight:700; letter-spacing:.02em; }
+           font-weight:700; letter-spacing:.02em;
+           display:flex; justify-content:space-between; align-items:center; }
+  #bell { background:none; border:1px solid #1e2f47; border-radius:20px;
+          color:var(--ink); font-size:16px; padding:6px 10px; }
   header small { display:block; color:var(--dim); font-weight:400; font-size:12px; }
   nav { display:flex; border-top:1px solid #1e2f47; }
   nav button { flex:1; background:none; border:0; color:var(--dim);
@@ -46,7 +49,7 @@
 </head>
 <body>
 <div id="app">
-  <header>Sidekick<small>tell it at night · wake up to it done</small></header>
+  <header><div>Sidekick<small>tell it at night · wake up to it done</small></div><button id="bell" title="Enable notifications">🔔</button></header>
   <main id="chatView"></main>
   <main id="briefView" class="hidden"></main>
   <div id="composer">
@@ -122,6 +125,22 @@ tabChat.onclick = () => { tabChat.classList.add('on'); tabBrief.classList.remove
   chatView.classList.remove('hidden'); briefView.classList.add('hidden'); };
 tabBrief.onclick = () => { tabBrief.classList.add('on'); tabChat.classList.remove('on');
   briefView.classList.remove('hidden'); chatView.classList.add('hidden'); loadBriefings(); };
+
+function b64(buf){return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function urlB64(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return Uint8Array.from(atob(s),c=>c.charCodeAt(0));}
+document.getElementById('bell').onclick = async () => {
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) { addMsg('Push is not supported in this browser.'); return; }
+    if (await Notification.requestPermission() !== 'granted') { addMsg('Notifications blocked — enable them to get the morning buzz.'); return; }
+    const reg = await navigator.serviceWorker.register('sw.js');
+    const {publicKey} = await (await fetch('/api/push/vapid-public-key')).json();
+    const sub = await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:urlB64(publicKey)});
+    await fetch('/api/push/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({endpoint:sub.endpoint,p256dh:b64(sub.getKey('p256dh')),auth:b64(sub.getKey('auth'))})});
+    document.getElementById('bell').style.display='none';
+    addMsg('Notifications on. I’ll buzz this phone when the briefing lands.');
+  } catch(e){ addMsg('Could not enable notifications: '+e.message); }
+};
 
 addMsg('Good evening. Give me a topic and a time — I’ll research overnight and brief you by morning.');
 </script>

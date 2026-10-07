@@ -17,7 +17,8 @@ Then fill the secrets (console or `doctl apps update`):
   REPLACE_ME to use `DO_INFERENCE_MODEL` directly.
 - `DIGITALOCEAN_TOKEN` — DO PAT; the backend mints its Action Gateway session
   with it at first tool call
-- `ONESIGNAL_APP_ID` / `ONESIGNAL_API_KEY` — morning push (optional; the
-  briefing view works without it)
+- `VAPID_PRIVATE_KEY` — set at deploy time via API (public key is already in
+  app.yaml); enables the morning Web Push. The briefing view works without it.
+- Push is Web Push/VAPID direct from the backend — no third-party push vendor.
 
 `DATABASE_URL` is injected automatically from the attached database.
