@@ -1,5 +1,7 @@
 """Sidekick backend: chat, overnight research jobs, briefings."""
+import asyncio
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
@@ -10,26 +12,31 @@ from .agent.chat import stream_chat
 from .agent.research import run_research_job
 from .jobs import scheduler, schedule_job
 from .memory.cache import get_cached_briefing
+from .memory.store import _pool as _db_pool
 from .memory.store import get_briefing, init_db, list_briefings, save_subscription
 
-app = FastAPI(title="Sidekick")
 
-# NOTE: the web UI is mounted at / AFTER all /api routes (see bottom of file),
-# so /api/* routes take precedence. Single-service deploy, no CORS fuss.
-
-
-@app.on_event("startup")
-async def startup():
-    import asyncio
+@asynccontextmanager
+async def lifespan(app: "FastAPI"):
     for attempt in range(6):
         try:
             await init_db()
-            print("init_db ok", flush=True)
+            # prove the tables exist, not just the connection
+            pool = await _db_pool()
+            await pool.fetchval("SELECT COUNT(*) FROM briefings")
+            print("init_db ok, tables verified", flush=True)
             break
         except Exception as e:
-            print(f"init_db attempt {attempt + 1} failed: {e}", flush=True)
+            print(f"init_db attempt {attempt + 1} failed: {type(e).__name__}: {e}", flush=True)
             await asyncio.sleep(5)
     scheduler.start()
+    yield
+
+
+app = FastAPI(title="Sidekick", lifespan=lifespan)
+
+# NOTE: the web UI is mounted at / AFTER all /api routes (see bottom of file),
+# so /api/* routes take precedence. Single-service deploy, no CORS fuss.
 
 
 class ChatIn(BaseModel):
