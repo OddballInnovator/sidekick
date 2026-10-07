@@ -2,6 +2,7 @@
 # Deploy: doctl apps create --spec infra/app.yaml
 # Then set the REPLACE_ME secrets in the console (or via doctl apps update).
 name: sidekick
+region: sfo3
 services:
 - name: api
   github:
@@ -46,3 +47,5 @@ databases:
   engine: VALKEY
   version: "8"
   size: db-s-1vcpu-1gb
+  production: true
+  cluster_name: sidekick-cache
