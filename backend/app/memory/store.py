@@ -54,7 +54,9 @@ async def init_db():
         return
     pool = await _pool()
     async with pool.acquire() as conn:
-        await conn.execute(SCHEMA)
+        # asyncpg execute() takes one statement at a time — split the schema.
+        for stmt in [s.strip() for s in SCHEMA.split(";") if s.strip()]:
+            await conn.execute(stmt)
 
 
 async def save_job(topic: str, status: str = "scheduled") -> dict:
