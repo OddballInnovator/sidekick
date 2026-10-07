@@ -83,7 +83,17 @@ async def push_subscribe(body: PushSub):
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "demo_mode": os.getenv("DEMO_MODE") == "1"}
+    db_status = "unconfigured"
+    if os.getenv("DATABASE_URL"):
+        try:
+            import asyncpg
+            conn = await asyncpg.connect(os.getenv("DATABASE_URL"), timeout=8)
+            await conn.execute("SELECT 1")
+            await conn.close()
+            db_status = "ok"
+        except Exception as e:
+            db_status = f"error: {type(e).__name__}: {e}"
+    return {"ok": True, "demo_mode": os.getenv("DEMO_MODE") == "1", "db": db_status}
 
 
 # Web UI served at / (registered last so /api routes win).
