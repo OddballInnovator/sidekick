@@ -12,7 +12,7 @@ from .agent.chat import stream_chat
 from .agent.research import run_research_job
 from .jobs import scheduler, schedule_job
 from .memory.cache import get_cached_briefing
-from .memory.store import _pool as _db_pool
+from .memory.store import get_pool as _db_pool
 from .memory.store import DATABASE_URL as STORE_DATABASE_URL
 from .memory.store import get_briefing, init_db, list_briefings, save_subscription
 

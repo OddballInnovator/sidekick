@@ -5,7 +5,7 @@ import os
 import asyncpg
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
-_pool = None
+_pool_instance = None
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (
@@ -42,17 +42,17 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 """
 
 
-async def _pool():
-    global _pool
-    if _pool is None:
-        _pool = await asyncpg.create_pool(DATABASE_URL)
-    return _pool
+async def get_pool():
+    global _pool_instance
+    if _pool_instance is None:
+        _pool_instance = await asyncpg.create_pool(DATABASE_URL)
+    return _pool_instance
 
 
 async def init_db():
     if not DATABASE_URL:
         return
-    pool = await _pool()
+    pool = await get_pool()
     async with pool.acquire() as conn:
         # asyncpg execute() takes one statement at a time — split the schema.
         for stmt in [s.strip() for s in SCHEMA.split(";") if s.strip()]:
@@ -60,7 +60,7 @@ async def init_db():
 
 
 async def save_job(topic: str, status: str = "scheduled") -> dict:
-    pool = await _pool()
+    pool = await get_pool()
     row = await pool.fetchrow(
         "INSERT INTO jobs (topic, status) VALUES ($1, $2) RETURNING id, topic, status",
         topic, status)
@@ -68,12 +68,12 @@ async def save_job(topic: str, status: str = "scheduled") -> dict:
 
 
 async def update_job(job_id: int, status: str) -> None:
-    pool = await _pool()
+    pool = await get_pool()
     await pool.execute("UPDATE jobs SET status=$1 WHERE id=$2", status, job_id)
 
 
 async def save_briefing(topic: str, content: str, sources: list, job_id: int | None) -> dict:
-    pool = await _pool()
+    pool = await get_pool()
     row = await pool.fetchrow(
         "INSERT INTO briefings (job_id, topic, content, sources) VALUES ($1,$2,$3,$4)"
         " RETURNING id, topic, content",
@@ -82,25 +82,25 @@ async def save_briefing(topic: str, content: str, sources: list, job_id: int | N
 
 
 async def list_briefings() -> list[dict]:
-    pool = await _pool()
+    pool = await get_pool()
     rows = await pool.fetch(
         "SELECT id, topic, created_at FROM briefings ORDER BY id DESC LIMIT 20")
     return [dict(r) for r in rows]
 
 
 async def get_briefing(briefing_id: int) -> dict:
-    pool = await _pool()
+    pool = await get_pool()
     row = await pool.fetchrow("SELECT * FROM briefings WHERE id=$1", briefing_id)
     return dict(row) if row else {}
 
 
 async def save_message(role: str, content: str) -> None:
-    pool = await _pool()
+    pool = await get_pool()
     await pool.execute("INSERT INTO messages (role, content) VALUES ($1,$2)", role, content)
 
 
 async def save_subscription(endpoint: str, p256dh: str, auth: str) -> None:
-    pool = await _pool()
+    pool = await get_pool()
     await pool.execute(
         """INSERT INTO push_subscriptions (endpoint, p256dh, auth)
            VALUES ($1,$2,$3)
@@ -109,6 +109,6 @@ async def save_subscription(endpoint: str, p256dh: str, auth: str) -> None:
 
 
 async def list_subscriptions() -> list[dict]:
-    pool = await _pool()
+    pool = await get_pool()
     rows = await pool.fetch("SELECT endpoint, p256dh, auth FROM push_subscriptions")
     return [dict(r) for r in rows]
