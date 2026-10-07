@@ -81,18 +81,30 @@ async def briefing(briefing_id: int):
 @app.post("/api/admin/init")
 async def admin_init():
     """One-time schema init (bypasses lifespan questions). Remove after demo."""
+    import traceback
     try:
-        await init_db()
         pool = await _db_pool()
+        info = {}
+        info["user"] = await pool.fetchval("SELECT current_user")
+        info["db"] = await pool.fetchval("SELECT current_database()")
+        row = await pool.fetchrow(
+            "SELECT nspowner::regrole AS owner FROM pg_namespace WHERE nspname='public'")
+        info["public_owner"] = str(row["owner"]) if row else None
+        # can we create our own schema?
+        try:
+            await pool.execute("CREATE SCHEMA IF NOT EXISTS sidekick")
+            info["create_schema"] = "ok"
+        except Exception as e:
+            info["create_schema"] = f"{type(e).__name__}: {e}"
+        await init_db()
         n = await pool.fetchval("SELECT COUNT(*) FROM briefings")
         tables = await pool.fetch(
             "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY 1")
         return {"ok": True, "briefings_count": n,
-                "tables": [r["tablename"] for r in tables]}
+                "tables": [r["tablename"] for r in tables], "info": info}
     except Exception as e:
-        import traceback
         return {"ok": False, "error": f"{type(e).__name__}: {e}",
-                "traceback": traceback.format_exc()[-2000:]}
+                "traceback": traceback.format_exc()[-2000:], "info": info}
 
 
 @app.get("/api/push/vapid-public-key")
