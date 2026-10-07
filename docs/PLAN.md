@@ -58,6 +58,13 @@ it does not ship.
 
 ## Flags
 - Inference & Agents balance was $4.69 on 2026-10-06 with auto-reload OFF.
-  Web Search / Web Fetch pause at zero. Top up before building/filming.
-- Verify the Action Gateway MCP endpoint shape for programmatic calls before
-  wiring tools; fall back to direct provider calls only if blocked.
+  Web Search / Web Fetch pause at zero. A console banner during verification
+  confirmed: without auto-reload, these tools eventually pause. Top up before
+  building/filming.
+- Action Gateway programmatic access VERIFIED 2026-10-06: POST
+  /v2/action-gateway/sessions (DO PAT) returns sessionUrn + mcpUrl
+  (https://actions.do-ai.run/mcp/session/<uuid>); tools invoked over
+  Streamable HTTP MCP via action_invoke. Real tool names: exa_web_search
+  (query, max_results), exa_web_fetch. Test session "sidekick-research"
+  created successfully (e9d2f479-…). Backend implements this in
+  app/agent/tools.py; needs DIGITALOCEAN_TOKEN at deploy time.
