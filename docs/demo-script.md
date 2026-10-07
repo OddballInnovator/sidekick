@@ -1,22 +1,36 @@
 # demo-script.md — the golden path (do not improvise on camera)
 
-Run with DEMO_MODE=1. Every line below is a shot. If a step fails, fix the
-code, not the script.
+Every step is a shot. VO says what we are doing and how, then the screen does
+and shows it. If a step fails, fix the code, not the script.
 
-## Hero take: restaurant booking (phone frame, real time)
-1. Prompt: "Get me a table for two Friday night, somewhere good near downtown."
-2. Expect: three options, best pick starred, each with rating/distance/price.
-3. Approval card appears: "Book 7:30 at [pick]?" [Approve] [Not now].
-4. Tap Approve. Expect: confirmation with reference within 5s.
+Filmed topic: the biggest AI infrastructure announcements this week.
+(Topic is the user's pick; this is the locked take. Live search preferred —
+fresh results prove it is real. DEMO_MODE=1 only if search misbehaves.)
 
-## Flight watch (real time)
-1. Prompt: "Watch SFO to Tokyo, grab it under $300."
-2. Trigger briefing seam (no waiting for the schedule).
-3. Expect: "Booked at $274." with itinerary.
+## Night — assign (phone frame, real time)
+VO: "It is 11pm. By 7am, research the biggest AI infrastructure announcements
+this week — five minutes, no fluff."
+1. Prompt: "By 7am, research the biggest AI infrastructure announcements this
+   week. Five minutes, no fluff."
+2. Expect: "Scheduled for 7:00 AM. I will research overnight and push the
+   briefing to your phone."
+VO: "One schedule. One stack. Good night."
+3. Expect: the job visible in the schedule list. Phone goes dark.
 
-## Memory beat (real time)
-1. Prompt: "What do you remember about me?"
-2. Expect: dietary, airline, seat, home airport recited.
+## Overnight — the run (timelapse)
+VO: "While you sleep, it works."
+1. Trigger: POST /jobs/trigger (the "morning" seam).
+2. Expect: searches issued → sources fetched → briefing synthesized → saved;
+   push notification fires.
 
-## Model swap (real time)
-1. In playground: same prompt, swap model, show same key working.
+## Morning — the payoff (phone frame, real time)
+VO: "7am."
+1. Expect: push notification "Your briefing is ready." Tap it.
+2. Expect: briefing view — the research, five minutes, sources linked.
+VO: "Wake up to it done."
+3. Slow scroll through the briefing. Hold on one sourced claim.
+
+## One stack (real time)
+VO: "Chat, schedule, tools, memory, push, one bill. One project on
+DigitalOcean ran the whole night."
+1. Show the DO project (app + database + jobs), then the billing page.
