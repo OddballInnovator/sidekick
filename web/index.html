@@ -1,4 +1,129 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pocket agent</title></head>
-<body><main id="app"><!-- Phase 1: chat UI; phone-frame viewport target --></main></body></html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1628">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<title>Sidekick</title>
+<style>
+  :root { --bg:#0b1628; --card:#132238; --ink:#f2f5f9; --dim:#93a3b8; --accent:#ff6b4a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font-family:-apple-system, system-ui, sans-serif; }
+  #app { max-width:430px; margin:0 auto; min-height:100dvh;
+         display:flex; flex-direction:column; }
+  header { padding:14px 16px; border-bottom:1px solid #1e2f47;
+           font-weight:700; letter-spacing:.02em; }
+  header small { display:block; color:var(--dim); font-weight:400; font-size:12px; }
+  nav { display:flex; border-top:1px solid #1e2f47; }
+  nav button { flex:1; background:none; border:0; color:var(--dim);
+               padding:12px; font-size:14px; }
+  nav button.on { color:var(--accent); font-weight:700; }
+  main { flex:1; overflow-y:auto; padding:12px 16px 16px; }
+  .msg { background:var(--card); border-radius:12px; padding:10px 12px;
+         margin:8px 0; line-height:1.45; }
+  .msg.user { background:#1b3a5c; margin-left:48px; }
+  .jobcard { border:1px solid var(--accent); border-radius:12px; padding:10px 12px;
+             margin:8px 0; font-size:14px; }
+  .jobcard b { color:var(--accent); }
+  #composer { display:flex; gap:8px; padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+              border-top:1px solid #1e2f47; }
+  #composer input { flex:1; background:var(--card); border:1px solid #1e2f47;
+                    color:var(--ink); border-radius:24px; padding:10px 14px; font-size:16px; }
+  #composer button { background:var(--accent); border:0; color:#fff;
+                     border-radius:24px; padding:10px 18px; font-size:16px; }
+  .brief { background:var(--card); border-radius:12px; padding:12px; margin:8px 0; }
+  .brief h3 { margin:0 0 4px; font-size:16px; }
+  .brief time { color:var(--dim); font-size:12px; }
+  .brief .body { line-height:1.6; font-size:15px; }
+  .brief .body a { color:var(--accent); }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>Sidekick<small>tell it at night · wake up to it done</small></header>
+  <main id="chatView"></main>
+  <main id="briefView" class="hidden"></main>
+  <div id="composer">
+    <input id="input" placeholder="By 7am, research…" autocomplete="off">
+    <button id="send">Send</button>
+  </div>
+  <nav>
+    <button id="tabChat" class="on">Chat</button>
+    <button id="tabBrief">Briefings</button>
+  </nav>
+</div>
+<script>
+const chatView = document.getElementById('chatView');
+const briefView = document.getElementById('briefView');
+const input = document.getElementById('input');
+
+function addMsg(text, cls='') {
+  const d = document.createElement('div');
+  d.className = 'msg ' + cls; d.textContent = text;
+  chatView.appendChild(d); chatView.scrollTop = chatView.scrollHeight;
+  return d;
+}
+function addJobCard(topic) {
+  const d = document.createElement('div');
+  d.className = 'jobcard';
+  d.innerHTML = `<b>⏰ Scheduled</b> — research runs at 7:00 AM. I’ll push the briefing to your phone.`;
+  chatView.appendChild(d); chatView.scrollTop = chatView.scrollHeight;
+}
+
+async function send() {
+  const text = input.value.trim(); if (!text) return;
+  input.value = '';
+  addMsg(text, 'user');
+  const el = addMsg('…');
+  const resp = await fetch('/api/chat', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({message:text}) });
+  const reader = resp.body.getReader();
+  const dec = new TextDecoder(); let buf = '', done = false;
+  while (!done) {
+    const {value, done:d} = await reader.read(); done = d;
+    buf += dec.decode(value || new Uint8Array());
+    for (const line of buf.split('\n\n')) {
+      if (!line.startsWith('data:')) continue;
+      const data = line.slice(5).trim();
+      if (data === '[DONE]') continue;
+      try {
+        const j = JSON.parse(data);
+        if (j.text) { el.textContent = j.text; if (j.job_id) addJobCard(); }
+      } catch(e){}
+    }
+  }
+}
+document.getElementById('send').onclick = send;
+input.onkeydown = e => { if (e.key === 'Enter') send(); };
+
+async function loadBriefings() {
+  const r = await fetch('/api/briefings'); const list = await r.json();
+  briefView.innerHTML = list.length ? '' : '<p style="color:var(--dim)">No briefings yet. Assign one tonight.</p>';
+  for (const b of list) {
+    const d = document.createElement('div');
+    d.className = 'brief';
+    d.innerHTML = `<h3>${b.topic}</h3><time>${b.created_at}</time><div class="body" id="b${b.id}">tap to read</div>`;
+    d.onclick = async () => {
+      const full = await (await fetch('/api/briefings/' + b.id)).json();
+      document.getElementById('b' + b.id).innerHTML = full.content;
+    };
+    briefView.appendChild(d);
+  }
+}
+const tabChat = document.getElementById('tabChat'), tabBrief = document.getElementById('tabBrief');
+tabChat.onclick = () => { tabChat.classList.add('on'); tabBrief.classList.remove('on');
+  chatView.classList.remove('hidden'); briefView.classList.add('hidden'); };
+tabBrief.onclick = () => { tabBrief.classList.add('on'); tabChat.classList.remove('on');
+  briefView.classList.remove('hidden'); chatView.classList.add('hidden'); loadBriefings(); };
+
+addMsg('Good evening. Give me a topic and a time — I’ll research overnight and brief you by morning.');
+</script>
+</body>
+</html>
