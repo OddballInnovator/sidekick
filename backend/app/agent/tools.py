@@ -108,10 +108,28 @@ async def _invoke(tool: str, arguments: dict):
         resp = await client.post(sess["mcp_url"], headers=_mcp_headers(sess["urn"]),
                                  json=payload)
         resp.raise_for_status()
-        data = resp.json()
+        data = _parse_mcp_response(resp)
     if "error" in data:
         raise RuntimeError(f"gateway error: {data['error']}")
     return _extract_text(data)
+
+
+def _parse_mcp_response(resp) -> dict:
+    """Streamable HTTP MCP may return plain JSON or an SSE stream."""
+    ctype = resp.headers.get("content-type", "")
+    if "text/event-stream" in ctype:
+        last = None
+        for line in resp.text.splitlines():
+            line = line.strip()
+            if line.startswith("data:"):
+                try:
+                    last = json.loads(line[5:].strip())
+                except json.JSONDecodeError:
+                    continue
+        if last is None:
+            raise RuntimeError("no JSON-RPC data in SSE stream")
+        return last
+    return resp.json()
 
 
 def _extract_text(payload: dict) -> str:
